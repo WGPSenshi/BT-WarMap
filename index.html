@@ -3,21 +3,151 @@
   <head>
     <title>Live RogueTech War Map</title>
     <meta charset="utf-8" />
-    <!-- <script src="https://cdn.rawgit.com/konvajs/konva/2.2.2/konva.min.js"></script> -->
-    <!-- <style>
-         body {
-         margin: 0;
-         padding: 0;
-         overflow: hidden;
-         background-color: #000000;
-         }
-         </style> -->
+    <script src="https://cdn.rawgit.com/konvajs/konva/2.2.2/konva.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000000;
+      }
+      #menu {
+        width: 20%;
+        float: left;
+        background-color: #000020;
+        color: white;
+        display: inline-block;
+        font-family: sans-serif;
+        display: inline-block;
+      }
+      #menu-interior {
+        min-height: 100%;
+        max-height: 100%;
+        height: 100%;
+        overflow: auto;
+      }
+      #menu h2 {
+        font-size: 100%;
+      }
+      #menu ul {
+        font-size: 60%;
+      }
+      #container {
+        width: 80%;
+        float: right;
+        overflow: hidden;
+      }
+    </style>
   </head>
   <body>
-    <!-- <div id="container"></div> -->
-    <canvas id="map" style="width: 95%; margin: 0 auto; display: block;"></canvas>
-
+    <div id="menu">
+      <div id="menu-interior">
+        <h2 id="factions-header">Factions</h2>
+        <ul id="factions-list"></ul>
+        <h2 id="contested-header">Contested Systems</h2>
+        <ul id="contested-list"></ul>
+      </div>
+    </div>
+    <div id="container"></div>
     <script>
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+
+      var stage = new Konva.Stage({
+        container: 'container',
+        width: width,
+        height: height,
+        draggable: true
+      });
+
+
+      var tooltipLayer = new Konva.Layer();
+
+      var tooltip = new Konva.Label({
+        opacity: 0.75,
+        visible: false,
+        listening: false
+      });
+
+      tooltip.add(new Konva.Tag({
+        fill: 'white',
+        pointerDirection: 'down',
+        pointerWidth: 10,
+        pointerHeight: 10,
+        lineJoin: 'round',
+        shadowColor: 'gray',
+        shadowBlur: 10,
+        shadowOffset: 10,
+        shadowOpacity: 0.2
+      }));
+
+      tooltip.add(new Konva.Text({
+        text: '',
+        fontFamily: 'Calibri',
+        fontSize: 18,
+        padding: 5,
+        fill: 'black'
+      }));
+
+      tooltipLayer.add(tooltip);
+
+      stage.on('mouseover mousemove dragmove', function(evt) {
+        var node = evt.target;
+        if (node && node.nodeType=="Shape") {
+          // update tooltip
+          var scale = stage.scaleX();
+
+          var mousePointTo = {
+            x: stage.getPointerPosition().x / scale - stage.x() / scale,
+            y: stage.getPointerPosition().y / scale - stage.y() / scale,
+          };
+
+          tooltip.position({
+            x : mousePointTo.x,
+            y : mousePointTo.y - 5
+          });
+          var newText = node.getId();
+          tooltip.children[1].setText(newText);
+          tooltip.show();
+          tooltipLayer.batchDraw();
+        }
+      });
+
+      stage.on('mouseout', function(evt) {
+        tooltip.hide();
+        tooltipLayer.draw();
+      });
+
+      function addSystem (system, contested, layer) {
+        if (contested) {
+          var contestedNode = new Konva.Circle({
+            x: system.x,
+            y: system.y,
+            radius: 4,
+            fill: "rgba(255,0,0, 0.35)",
+            id: system.name
+          });
+          layer.add(contestedNode);
+        } else {
+          var bloomNode = new Konva.Circle({
+            x: system.x,
+            y: system.y,
+            radius: 2,
+            fill: system.color,
+            id: system.name,
+            opacity: 0.25
+          });
+          layer.add(bloomNode);
+        }
+        var node = new Konva.Circle({
+          x: system.x,
+          y: system.y,
+          radius: 1,
+          fill: system.color,
+          id: system.name
+        });
+        layer.add(node);
+      }
+
       const WarTechStateEndpoint = "http://85.214.93.101:8000/warServices/StarMap/";
       const ContestedColor = [255, 0, 0];
 
@@ -78,35 +208,32 @@
         ctx.fill(circle);
       }
 
-      function drawContestedSystemNames (contestedSystems, ctx) {
-        ctx.font = "36px sans-serif";
-        ctx.fillText(`Contested Systems: ${contestedSystems.length}`, 10, 50);
-        ctx.font = "24px sans-serif";
+      function drawContestedSystemNames (contestedSystems) {
+        var header = document.getElementById("contested-header");
+        header.appendChild(document.createTextNode(` (${contestedSystems.length})`));
+        var container = document.getElementById("contested-list");
         for (var i = 0; i < contestedSystems.length; i++) {
-          ctx.fillText(contestedSystems[i], 25, 100 + 36 * i);
+          var li = document.createElement("li");
+          var text = document.createTextNode(contestedSystems[i]);
+          li.appendChild(text);
+          container.appendChild(li);
         }
       };
 
-      function drawFactionGlossary (factions, mapSize, ctx) {
-        var glossaryLeft = mapSize.x - 400;
-        var glossaryTop = mapSize.y / 2 - 400;
-        ctx.font = "36px sans-serif";
-        ctx.fillText("Faction Legend", glossaryLeft, glossaryTop);
-        ctx.font = "24px sans-serif";
+      function drawFactionGlossary (factions) {
+        var container = document.getElementById("factions-list");
+
         for (var i = 0; i < factions.length; i++) {
-          var color = factions[i].color;
-          var circle = new Path2D();
-          var newY = glossaryTop + 50 + 35 * i;
-          ctx.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
-          circle.arc(glossaryLeft - 20, newY - 10, 10, 0, 2 * Math.PI, false);
-          ctx.fill(circle);
-          ctx.fillStyle = "white";
-          ctx.fillText(factions[i].name, glossaryLeft, newY);
+          var li = document.createElement("li");
+          var factionColor = factions[i].color;
+          li.style.color = `rgb(${factionColor[0] * 255}, ${factionColor[1] * 255}, ${factionColor[2] * 255})`
+          var text = document.createTextNode(factions[i].name);
+          li.appendChild(text);
+          container.appendChild(li);
         }
       };
 
       var wSystems, wFactions, wState;
-      var canvas = document.getElementById("map");
 
       getSetupData()
         .then(([systems, factions, state]) => {
@@ -114,9 +241,9 @@
           wFactions = factions;
           wState = state;
           var contestedSystems = [];
-          /* console.log(systems[0]);
-           * console.log(factions[0]);
-           * console.log(state[0]); */
+          console.log(systems[0]);
+          console.log(factions[0]);
+          console.log(state[0]);
           var minX=100000,
               minY=100000,
               maxX=-100000,
@@ -127,27 +254,58 @@
             if (systems[i].y < minY) minY = systems[i].y;
             if (systems[i].y > maxY) maxY = systems[i].y;
           }
+          drawFactionGlossary(factions);
           var mapSize = { x: Math.floor(1.1 * (maxX - minX)), y: Math.floor(1.1 * (maxY - minY)) };
           var offset = { x: mapSize.x / 2, y: mapSize.y / 2 }
-          canvas.width = mapSize.x;
-          canvas.height = mapSize.y;
-          var ctx = canvas.getContext("2d");
-          ctx.fillStyle = "black";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+          var layer = new Konva.Layer();
           for(var i = 0; i < systems.length; i++) {
             var contested = state[i].controlList.filter(x => x.percentage > 0).length > 1 ;
-            ctx.fillStyle = determineFactionColor(contested, state[i], factions);
-            var coordinates = { x: systems[i].x + offset.x, y: offset.y - systems[i].y };
-            drawSystem(coordinates, ctx);
+            var color = determineFactionColor(contested, state[i], factions);
+            var drawableSystem = { x: systems[i].x + offset.x, y: offset.y - systems[i].y, color: color, name: systems[i].name  };
+            addSystem(drawableSystem, contested, layer);
+            if (i % 1000 == 999) {
+              stage.add(layer);
+              layer = new Konva.Layer();
+            }
             if (contested) {
-              drawContestMark(coordinates, ctx);
               contestedSystems.push(systems[i].name)
             }
           }
-          drawContestedSystemNames(contestedSystems, ctx);
-          drawContestedLegend(mapSize, ctx);
-          drawFactionGlossary(factions, mapSize, ctx);
+          drawContestedSystemNames(contestedSystems);
+          stage.position({x: -offset.x+600, y: -offset.y+500});
+          stage.add(tooltipLayer);
+          stage.batchDraw();
+
+          var scaleBy = 1.25;
+          var prevTime = new Date().getTime();
+          var timedScale = function (e) {
+            var curTime = new Date().getTime();
+            if(typeof prevTime !== 'undefined'){
+              var timeDiff = curTime - prevTime;
+              if (timeDiff > 100) {
+                e.preventDefault();
+
+                var oldScale = stage.scaleX();
+
+                var mousePointTo = {
+                  x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+                  y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+                };
+
+                var newScale = e.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+                stage.scale({ x: newScale, y: newScale });
+
+                var newPos = {
+                  x: -(mousePointTo.x - stage.getPointerPosition().x / newScale) * newScale,
+                  y: -(mousePointTo.y - stage.getPointerPosition().y / newScale) * newScale
+                };
+                stage.position(newPos);
+                stage.batchDraw();
+              }
+            }
+            prevTime = curTime;
+          }
+          window.addEventListener("wheel", timedScale);
         }).catch((err) => {
           console.log(err);
         });
