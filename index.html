@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Live RogueTech War Map</title>
+    <meta charset="utf-8" />
+    <!-- <script src="https://cdn.rawgit.com/konvajs/konva/2.2.2/konva.min.js"></script> -->
+    <!-- <style>
+         body {
+         margin: 0;
+         padding: 0;
+         overflow: hidden;
+         background-color: #000000;
+         }
+         </style> -->
+  </head>
+  <body>
+    <!-- <div id="container"></div> -->
+    <canvas id="map" style="width: 95%; margin: 0 auto; display: block;"></canvas>
+
+    <script>
+      const WarTechStateEndpoint = "http://85.214.93.101:8000/warServices/StarMap/";
+      const ContestedColor = [255, 0, 0];
+
+      function getSystems () {
+        return fetch("systems.json").then(response => response.json());
+      };
+
+      function getFactions () {
+        return fetch("factions.json").then(response => response.json());
+      };
+
+      function getCurrentState () {
+        return fetch(WarTechStateEndpoint).then(response => response.json()).then(json => json["systems"]);
+        //return fetch("state.json").then(response => response.json()).then(json => json["systems"]);
+      }
+
+      function getSetupData () {
+        return Promise.all([getSystems(), getFactions(), getCurrentState()]);
+      };
+
+      function determineFactionColor (contested, state, factions)
+      {
+        var color = [255 ,255, 255];
+        if (contested) {
+          color = ContestedColor;
+        } else {
+          var factionId = state.controlList[0].faction;
+          color = factions.find(faction => faction.id == factionId).color;
+          color = [color[0]*255, color[1]*255, color[2]*255];
+        }
+        return `rgb(${color[0]},${color[1]},${color[2]})`;
+      }
+
+      function drawSystem (coordinates, ctx) {
+        var circle = new Path2D();
+        circle.arc(coordinates.x, coordinates.y, 3, 0, 2 * Math.PI, false);
+        ctx.fill(circle);
+      };
+
+      function drawContestedLegend(mapSize, ctx) {
+        var center = mapSize.x / 2 - 80;
+        var color = ContestedColor;
+        ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+        ctx.font = "36px sans-serif";
+        ctx.fillText("Contested System Marker", center, 50);
+        drawSystem({x: center - 40, y: 40}, ctx);
+        drawContestMark({x: center - 40, y: 40}, ctx);
+      };
+
+      function drawContestMark (coordinates, ctx) {
+        var circle = new Path2D();
+        ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
+        circle.arc(coordinates.x, coordinates.y, 10, 0, 2 * Math.PI, false);
+        ctx.fill(circle);
+        var circle = new Path2D();
+        ctx.fillStyle = "rgba(255, 0, 0, 0.75)";
+        circle.arc(coordinates.x, coordinates.y, 5, 0, 2 * Math.PI, false);
+        ctx.fill(circle);
+      }
+
+      function drawContestedSystemNames (contestedSystems, ctx) {
+        ctx.font = "36px sans-serif";
+        ctx.fillText(`Contested Systems: ${contestedSystems.length}`, 10, 50);
+        ctx.font = "24px sans-serif";
+        for (var i = 0; i < contestedSystems.length; i++) {
+          ctx.fillText(contestedSystems[i], 25, 100 + 36 * i);
+        }
+      };
+
+      function drawFactionGlossary (factions, mapSize, ctx) {
+        var glossaryLeft = mapSize.x - 400;
+        var glossaryTop = mapSize.y / 2 - 400;
+        ctx.font = "36px sans-serif";
+        ctx.fillText("Faction Legend", glossaryLeft, glossaryTop);
+        ctx.font = "24px sans-serif";
+        for (var i = 0; i < factions.length; i++) {
+          var color = factions[i].color;
+          var circle = new Path2D();
+          var newY = glossaryTop + 50 + 35 * i;
+          ctx.fillStyle = `rgb(${color[0] * 255}, ${color[1] * 255}, ${color[2] * 255})`;
+          circle.arc(glossaryLeft - 20, newY - 10, 10, 0, 2 * Math.PI, false);
+          ctx.fill(circle);
+          ctx.fillStyle = "white";
+          ctx.fillText(factions[i].name, glossaryLeft, newY);
+        }
+      };
+
+      var wSystems, wFactions, wState;
+      var canvas = document.getElementById("map");
+
+      getSetupData()
+        .then(([systems, factions, state]) => {
+          wSystems = systems;
+          wFactions = factions;
+          wState = state;
+          var contestedSystems = [];
+          /* console.log(systems[0]);
+           * console.log(factions[0]);
+           * console.log(state[0]); */
+          var minX=100000,
+              minY=100000,
+              maxX=-100000,
+              maxY=-100000;
+          for(var i = 0; i < systems.length; i++) {
+            if (systems[i].x < minX) minX = systems[i].x;
+            if (systems[i].x > maxX) maxX = systems[i].x;
+            if (systems[i].y < minY) minY = systems[i].y;
+            if (systems[i].y > maxY) maxY = systems[i].y;
+          }
+          var mapSize = { x: Math.floor(1.1 * (maxX - minX)), y: Math.floor(1.1 * (maxY - minY)) };
+          var offset = { x: mapSize.x / 2, y: mapSize.y / 2 }
+          canvas.width = mapSize.x;
+          canvas.height = mapSize.y;
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          for(var i = 0; i < systems.length; i++) {
+            var contested = state[i].controlList.filter(x => x.percentage > 0).length > 1 ;
+            ctx.fillStyle = determineFactionColor(contested, state[i], factions);
+            var coordinates = { x: systems[i].x + offset.x, y: offset.y - systems[i].y };
+            drawSystem(coordinates, ctx);
+            if (contested) {
+              drawContestMark(coordinates, ctx);
+              contestedSystems.push(systems[i].name)
+            }
+          }
+          drawContestedSystemNames(contestedSystems, ctx);
+          drawContestedLegend(mapSize, ctx);
+          drawFactionGlossary(factions, mapSize, ctx);
+        }).catch((err) => {
+          console.log(err);
+        });
+    </script>
+  </body>
+</html>

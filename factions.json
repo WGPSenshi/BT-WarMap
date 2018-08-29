@@ -1,0 +1,21 @@
+[
+    { "name": "The Outworlds Alliance", "id": 53, "color": [0.627, 0.322, 0.176] },
+    { "name": "Marian Hegemony", "id": 9, "color": [1, 0.549, 0] },
+    { "name": "Free Rasalhague Republic", "id": 14, "color": [0, 1, 1] },
+    { "name": "The Local Pirate Organization", "id": 13, "color": [0.4, 0.5, 0.4] },
+    { "name": "The Arano Restoration", "id": 10, "color": [0.750, 0.160, 0.160] },
+    { "name": "St. Ives Compact", "id": 11, "color": [1.000, 0.412, 0.706] },
+    { "name": "The Federated Suns", "id": 2, "color": [1.000, 0.864, 0.419] },
+    { "name": "The Draconis Combine", "id": 4, "color": [0.863, 0.078, 0.235] },
+    { "name": "The Capellan Confederation", "id": 3, "color": [0.815, 1.000, 0.566]},
+    { "name": "The Planetary Government", "id": 17, "color": [1, 1, 1] },
+    { "name": "Oberon Confederation", "id": 50, "color": [1, 1, 0] },
+    { "name": "The Magistracy of Canopus", "id": 8, "color": [0.271, 1.000, 0.941] },
+    { "name": "Lothian League", "id": 51, "color": [0.196, 0.804, 0.196] },
+    { "name": "The Free Worlds League", "id": 5, "color": [0.782, 0.574, 1.000] },
+    { "name": "The Mercenary Review Board", "id": 12, "color": [0.824, 0.412, 0.118] },
+    { "name": "Circinus Federation", "id": 52, "color": [0.545, 0, 0] },
+    { "name": "Abandoned", "id": 1, "color": [0.2, 0.2, 0.2] },
+    { "name": "The Lyran Commonwealth", "id": 6, "color": [0.255, 0.412, 0.882] },
+    { "name": "The Taurian Concordat", "id": 7, "color": [0.346, 0.621, 1.000] }
+]
