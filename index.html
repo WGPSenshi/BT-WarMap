@@ -24,6 +24,7 @@
         max-height: 100%;
         height: 100%;
         overflow: auto;
+        margin: 5px 20px;
       }
       #menu h2 {
         font-size: 100%;
@@ -106,6 +107,7 @@
             y : mousePointTo.y - 5
           });
           var newText = node.getId();
+          // children[1] is name of system;
           tooltip.children[1].setText(newText);
           tooltip.show();
           tooltipLayer.batchDraw();
@@ -118,13 +120,24 @@
       });
 
       function addSystem (system, contested, layer) {
+        var hoverNode = new Konva.Circle({
+          x: system.x,
+          y: system.y,
+          radius: 6,
+          id: system.name,
+          factions: system.factions,
+          fill: "black",
+          opacity: 0
+        });
+        layer.add(hoverNode);
         if (contested) {
           var contestedNode = new Konva.Circle({
             x: system.x,
             y: system.y,
             radius: 4,
             fill: "rgba(255,0,0, 0.35)",
-            id: system.name
+            id: system.name,
+            factions: system.factions
           });
           layer.add(contestedNode);
         } else {
@@ -134,7 +147,8 @@
             radius: 2,
             fill: system.color,
             id: system.name,
-            opacity: 0.25
+            opacity: 0.25,
+            factions: system.factions
           });
           layer.add(bloomNode);
         }
@@ -143,7 +157,8 @@
           y: system.y,
           radius: 1,
           fill: system.color,
-          id: system.name
+          id: system.name,
+          factions: system.factions
         });
         layer.add(node);
       }
@@ -168,44 +183,12 @@
         return Promise.all([getSystems(), getFactions(), getCurrentState()]);
       };
 
-      function determineFactionColor (contested, state, factions)
+      function determineFactionColor (state, factions)
       {
-        var color = [255 ,255, 255];
-        if (contested) {
-          color = ContestedColor;
-        } else {
-          var factionId = state.controlList[0].faction;
-          color = factions.find(faction => faction.id == factionId).color;
-          color = [color[0]*255, color[1]*255, color[2]*255];
-        }
+        var factionId = state.controlList[0].faction;
+        var color = factions[factionId].color;
+        color = [color[0]*255, color[1]*255, color[2]*255];
         return `rgb(${color[0]},${color[1]},${color[2]})`;
-      }
-
-      function drawSystem (coordinates, ctx) {
-        var circle = new Path2D();
-        circle.arc(coordinates.x, coordinates.y, 3, 0, 2 * Math.PI, false);
-        ctx.fill(circle);
-      };
-
-      function drawContestedLegend(mapSize, ctx) {
-        var center = mapSize.x / 2 - 80;
-        var color = ContestedColor;
-        ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
-        ctx.font = "36px sans-serif";
-        ctx.fillText("Contested System Marker", center, 50);
-        drawSystem({x: center - 40, y: 40}, ctx);
-        drawContestMark({x: center - 40, y: 40}, ctx);
-      };
-
-      function drawContestMark (coordinates, ctx) {
-        var circle = new Path2D();
-        ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
-        circle.arc(coordinates.x, coordinates.y, 10, 0, 2 * Math.PI, false);
-        ctx.fill(circle);
-        var circle = new Path2D();
-        ctx.fillStyle = "rgba(255, 0, 0, 0.75)";
-        circle.arc(coordinates.x, coordinates.y, 5, 0, 2 * Math.PI, false);
-        ctx.fill(circle);
       }
 
       function drawContestedSystemNames (contestedSystems) {
@@ -221,14 +204,26 @@
       };
 
       function drawFactionGlossary (factions) {
+        var sorted = [];
+        for(var f in factions) {
+          if (f == "1") continue; // we handle abandoned faction below
+          sorted.push({id: f, c: factions[f].controlCount});
+        }
+        sorted.sort((a,b) => b.c - a.c);
+        sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
         var container = document.getElementById("factions-list");
-
-        for (var i = 0; i < factions.length; i++) {
+        for (var i = 0; i < sorted.length; i++) {
+          var fId = sorted[i].id;
           var li = document.createElement("li");
-          var factionColor = factions[i].color;
+          var factionColor = factions[fId].color;
           li.style.color = `rgb(${factionColor[0] * 255}, ${factionColor[1] * 255}, ${factionColor[2] * 255})`
-          var text = document.createTextNode(factions[i].name);
+          var text = document.createTextNode(factions[fId].name);
+          var span = document.createElement("span");
+          span.style.color = "white";
+          var count = document.createTextNode(` (${sorted[i].c})`);
+          span.appendChild(count);
           li.appendChild(text);
+          li.appendChild(span);
           container.appendChild(li);
         }
       };
@@ -241,27 +236,33 @@
           wFactions = factions;
           wState = state;
           var contestedSystems = [];
-          console.log(systems[0]);
-          console.log(factions[0]);
-          console.log(state[0]);
-          var minX=100000,
-              minY=100000,
-              maxX=-100000,
-              maxY=-100000;
-          for(var i = 0; i < systems.length; i++) {
-            if (systems[i].x < minX) minX = systems[i].x;
-            if (systems[i].x > maxX) maxX = systems[i].x;
-            if (systems[i].y < minY) minY = systems[i].y;
-            if (systems[i].y > maxY) maxY = systems[i].y;
-          }
-          drawFactionGlossary(factions);
-          var mapSize = { x: Math.floor(1.1 * (maxX - minX)), y: Math.floor(1.1 * (maxY - minY)) };
-          var offset = { x: mapSize.x / 2, y: mapSize.y / 2 }
+          /* console.log(systems[0]);
+           * console.log(factions[0]);
+           * console.log(state[0]); */
+          /* var minX=100000,
+           *     minY=100000,
+           *     maxX=-100000,
+           *     maxY=-100000;
+           * for(var i = 0; i < systems.length; i++) {
+           *   if (systems[i].x < minX) minX = systems[i].x;
+           *   if (systems[i].x > maxX) maxX = systems[i].x;
+           *   if (systems[i].y < minY) minY = systems[i].y;
+           *   if (systems[i].y > maxY) maxY = systems[i].y;
+           * }
+           * var mapSize = { x: Math.floor(1.1 * (maxX - minX)), y: Math.floor(1.1 * (maxY - minY)) };
+           * var offset = { x: mapSize.x / 2, y: mapSize.y / 2 } */
           var layer = new Konva.Layer();
           for(var i = 0; i < systems.length; i++) {
-            var contested = state[i].controlList.filter(x => x.percentage > 0).length > 1 ;
-            var color = determineFactionColor(contested, state[i], factions);
-            var drawableSystem = { x: systems[i].x + offset.x, y: offset.y - systems[i].y, color: color, name: systems[i].name  };
+            state[i].controlList.sort((a,b) => b.percentage - a.percentage);
+            var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
+            var contested = contestingFactions.length > 1 ;
+            if (contested) console.log(systems[i].name, contestingFactions);
+            if (!contested) {
+              contestingFactions = [state[i].controlList[0]];
+              factions[contestingFactions[0].faction].controlCount++;
+            }
+            var color = determineFactionColor( state[i], factions);
+            var drawableSystem = { x: systems[i].x, y: -systems[i].y, color: color, name: systems[i].name, factions: contestingFactions };
             addSystem(drawableSystem, contested, layer);
             if (i % 1000 == 999) {
               stage.add(layer);
@@ -271,8 +272,9 @@
               contestedSystems.push(systems[i].name)
             }
           }
+          drawFactionGlossary(factions);
           drawContestedSystemNames(contestedSystems);
-          stage.position({x: -offset.x+600, y: -offset.y+500});
+          stage.position({x: 600, y: 400});
           stage.add(tooltipLayer);
           stage.batchDraw();
 
@@ -281,10 +283,9 @@
           var timedScale = function (e) {
             var curTime = new Date().getTime();
             if(typeof prevTime !== 'undefined'){
+              e.preventDefault();
               var timeDiff = curTime - prevTime;
               if (timeDiff > 100) {
-                e.preventDefault();
-
                 var oldScale = stage.scaleX();
 
                 var mousePointTo = {
