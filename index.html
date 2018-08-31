@@ -107,7 +107,12 @@
             y : mousePointTo.y - 5
           });
           var newText = node.getId();
-          // children[1] is name of system;
+          window.lastnode = node;
+          var controllingFactions = node.getAttrs().factions;
+          for (var i = 0; i < controllingFactions.length; i++) {
+            var faction = controllingFactions[i];
+            newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}`;
+          }
           tooltip.children[1].setText(newText);
           tooltip.show();
           tooltipLayer.batchDraw();
@@ -206,10 +211,12 @@
       function drawFactionGlossary (factions) {
         var sorted = [];
         for(var f in factions) {
-          if (f == "1") continue; // we handle abandoned faction below
+          if (f == "1") continue;  // we handle abandoned faction below
+          if (f == "17") continue; // we handle the planetary govt below
           sorted.push({id: f, c: factions[f].controlCount});
         }
         sorted.sort((a,b) => b.c - a.c);
+        sorted.push({id: "17", c: factions["17"].controlCount}); // put planetary govt near the bottom of the list
         sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
         var container = document.getElementById("factions-list");
         for (var i = 0; i < sorted.length; i++) {
@@ -236,27 +243,11 @@
           wFactions = factions;
           wState = state;
           var contestedSystems = [];
-          /* console.log(systems[0]);
-           * console.log(factions[0]);
-           * console.log(state[0]); */
-          /* var minX=100000,
-           *     minY=100000,
-           *     maxX=-100000,
-           *     maxY=-100000;
-           * for(var i = 0; i < systems.length; i++) {
-           *   if (systems[i].x < minX) minX = systems[i].x;
-           *   if (systems[i].x > maxX) maxX = systems[i].x;
-           *   if (systems[i].y < minY) minY = systems[i].y;
-           *   if (systems[i].y > maxY) maxY = systems[i].y;
-           * }
-           * var mapSize = { x: Math.floor(1.1 * (maxX - minX)), y: Math.floor(1.1 * (maxY - minY)) };
-           * var offset = { x: mapSize.x / 2, y: mapSize.y / 2 } */
           var layer = new Konva.Layer();
           for(var i = 0; i < systems.length; i++) {
             state[i].controlList.sort((a,b) => b.percentage - a.percentage);
             var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
             var contested = contestingFactions.length > 1 ;
-            if (contested) console.log(systems[i].name, contestingFactions);
             if (!contested) {
               contestingFactions = [state[i].controlList[0]];
               factions[contestingFactions[0].faction].controlCount++;
