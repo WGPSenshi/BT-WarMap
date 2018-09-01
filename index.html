@@ -29,6 +29,9 @@
       #menu h2 {
         font-size: 100%;
       }
+      #menu p {
+        font-size: 50%;
+      }
       #menu ul {
         font-size: 60%;
       }
@@ -43,6 +46,7 @@
     <div id="menu">
       <div id="menu-interior">
         <h2 id="factions-header">Factions</h2>
+        <p>click toggles. S+click toggles all others.</p>
         <ul id="factions-list"></ul>
         <h2 id="contested-header">Contested Systems</h2>
         <ul id="contested-list"></ul>
@@ -231,6 +235,7 @@
         }
       };
 
+      var exclusiveVisible = true;
       function drawFactionGlossary (factions) {
         var sorted = [];
         for(var f in factions) {
@@ -238,6 +243,23 @@
           if (f == "17") continue; // we handle the planetary govt below
           sorted.push({id: f, c: factions[f].controlCount});
         }
+        var factionToggler = function(event) {
+          if (event.shiftKey) {
+            // hide everything except currently clicked faction
+            for (layer in factionLayers) {
+              if (this == layer) continue;
+              if (exclusiveVisible) {
+                factionLayers[layer].hide();
+              } else {
+                factionLayers[layer].show();
+              }
+            }
+            exclusiveVisible = !exclusiveVisible
+          } else {
+            // hide just currently clicked faction
+            factionLayers[this].isVisible() ? factionLayers[this].hide() : factionLayers[this].show();
+          }
+        };
         sorted.sort((a,b) => b.c - a.c);
         sorted.push({id: "17", c: factions["17"].controlCount}); // put planetary govt near the bottom of the list
         sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
@@ -255,6 +277,11 @@
           li.appendChild(text);
           li.appendChild(span);
           container.appendChild(li);
+          li.addEventListener(
+            "click",
+            factionToggler.bind(fId),
+            false
+          );
         }
       };
 
@@ -294,7 +321,6 @@
             }
           }
           for (var factionId in factionLayers) {
-            console.log(factionLayers[factionId]);
             stage.add(factionLayers[factionId]);
           }
           stage.add(contestedLayer);
@@ -307,9 +333,12 @@
           var scaleBy = 1.25;
           var prevTime = new Date().getTime();
           var timedScale = function (e) {
+            if (!stage.getPointerPosition()) {
+              return;
+            }
+            e.preventDefault();
             var curTime = new Date().getTime();
             if(typeof prevTime !== 'undefined'){
-              e.preventDefault();
               var timeDiff = curTime - prevTime;
               if (timeDiff > 100) {
                 var oldScale = stage.scaleX();
