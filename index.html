@@ -60,6 +60,25 @@
         draggable: true
       });
 
+      var bgLayer = new Konva.Layer();
+
+      var imageObj = new Image();
+      var backgroundImage = new Konva.Image();
+      imageObj.onload = function() {
+        backgroundImage = new Konva.Image({
+          x: -14000,
+          y: -19250,
+          width: 28000,
+          height: 28000,
+          image: imageObj,
+          opacity: 0.2
+        });
+        bgLayer.add(backgroundImage);
+        bgLayer.draw();
+      };
+      imageObj.src = 'MilkyWay.jpg';
+
+      stage.add(bgLayer);
 
       var tooltipLayer = new Konva.Layer();
 
@@ -93,7 +112,7 @@
 
       stage.on('mouseover mousemove dragmove', function(evt) {
         var node = evt.target;
-        if (node && node.nodeType=="Shape") {
+        if (node && node.nodeType == "Shape" && node != backgroundImage) {
           // update tooltip
           var scale = stage.scaleX();
 
@@ -101,7 +120,6 @@
             x: stage.getPointerPosition().x / scale - stage.x() / scale,
             y: stage.getPointerPosition().y / scale - stage.y() / scale,
           };
-
           tooltip.position({
             x : mousePointTo.x,
             y : mousePointTo.y - 5
@@ -111,7 +129,7 @@
           var controllingFactions = node.getAttrs().factions;
           for (var i = 0; i < controllingFactions.length; i++) {
             var faction = controllingFactions[i];
-            newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}`;
+            newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}%`;
           }
           tooltip.children[1].setText(newText);
           tooltip.show();
@@ -124,11 +142,13 @@
         tooltipLayer.draw();
       });
 
+      var factionLayers = {};
+
       function addSystem (system, contested, layer) {
         var hoverNode = new Konva.Circle({
           x: system.x,
           y: system.y,
-          radius: 6,
+          radius: 5,
           id: system.name,
           factions: system.factions,
           fill: "black",
@@ -140,7 +160,7 @@
             x: system.x,
             y: system.y,
             radius: 4,
-            fill: "rgba(255,0,0, 0.35)",
+            fill: "rgba(255,0,0, 0.45)",
             id: system.name,
             factions: system.factions
           });
@@ -149,10 +169,13 @@
           var bloomNode = new Konva.Circle({
             x: system.x,
             y: system.y,
-            radius: 2,
-            fill: system.color,
+            radius: 3,
+            fillRadialGradientStartPoint: 0,
+            fillRadialGradientStartRadius: 0,
+            fillRadialGradientEndPoint: 0,
+            fillRadialGradientEndRadius: 2.5,
+            fillRadialGradientColorStops: [1, 'rgba(0,0,0,0)', 0.5, system.color],
             id: system.name,
-            opacity: 0.25,
             factions: system.factions
           });
           layer.add(bloomNode);
@@ -160,7 +183,7 @@
         var node = new Konva.Circle({
           x: system.x,
           y: system.y,
-          radius: 1,
+          radius: system.name == "Terra" ? 1.5 : 1,
           fill: system.color,
           id: system.name,
           factions: system.factions
@@ -243,26 +266,38 @@
           wFactions = factions;
           wState = state;
           var contestedSystems = [];
-          var layer = new Konva.Layer();
+          var layer;
+          var contestedLayer = new Konva.Layer();
           for(var i = 0; i < systems.length; i++) {
             state[i].controlList.sort((a,b) => b.percentage - a.percentage);
             var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
             var contested = contestingFactions.length > 1 ;
+            var controllingFaction;
             if (!contested) {
               contestingFactions = [state[i].controlList[0]];
-              factions[contestingFactions[0].faction].controlCount++;
+              controllingFaction = contestingFactions[0].faction;
+              factions[controllingFaction].controlCount++;
             }
             var color = determineFactionColor( state[i], factions);
             var drawableSystem = { x: systems[i].x, y: -systems[i].y, color: color, name: systems[i].name, factions: contestingFactions };
-            addSystem(drawableSystem, contested, layer);
-            if (i % 1000 == 999) {
-              stage.add(layer);
-              layer = new Konva.Layer();
+            if (contested) {
+              layer = contestedLayer;
+            } else {
+              if (!factionLayers[controllingFaction]) {
+                factionLayers[controllingFaction] = new Konva.Layer();
+              }
+              layer = factionLayers[controllingFaction];
             }
+            addSystem(drawableSystem, contested, layer);
             if (contested) {
               contestedSystems.push(systems[i].name)
             }
           }
+          for (var factionId in factionLayers) {
+            console.log(factionLayers[factionId]);
+            stage.add(factionLayers[factionId]);
+          }
+          stage.add(contestedLayer);
           drawFactionGlossary(factions);
           drawContestedSystemNames(contestedSystems);
           stage.position({x: 600, y: 400});
@@ -278,7 +313,6 @@
               var timeDiff = curTime - prevTime;
               if (timeDiff > 100) {
                 var oldScale = stage.scaleX();
-
                 var mousePointTo = {
                   x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
                   y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
