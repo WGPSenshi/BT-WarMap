@@ -48,7 +48,7 @@
         <h2 id="factions-header">Factions</h2>
         <p>click toggles. S+click toggles all others.</p>
         <ul id="factions-list"></ul>
-        <h2 id="contested-header">Contested Systems</h2>
+        <h2 id="contested-header">Contested Systems (60min)</h2>
         <ul id="contested-list"></ul>
       </div>
     </div>
@@ -195,7 +195,18 @@
         layer.add(node);
       }
 
-      const WarTechStateEndpoint = "http://85.214.93.101:8000/warServices/StarMap/";
+      const Prod = true;
+      const EndPoints = {
+        "Dev": {
+          "State":   "state.json",
+          "Mission": "mission.results.json"
+        },
+        "Prod": {
+          "State":   "http://roguetech.org:8000/warServices/StarMap/",
+          "Mission": "http://roguetech.org:8000/warServices/Mission/Results/?MinutesBack=60&MaxResults=300"
+        }
+      };
+
       const ContestedColor = [255, 0, 0];
 
       function getSystems () {
@@ -207,13 +218,12 @@
       };
 
       function getCurrentState () {
-        return fetch(WarTechStateEndpoint).then(response => response.json()).then(json => json["systems"]);
-        //return fetch("state.json").then(response => response.json()).then(json => json["systems"]);
+        return fetch(Prod ? EndPoints["Prod"]["State"] : EndPoints["Dev"]["State"]).then(response => response.json()).then(json => json["systems"]);
       }
 
-      function getSetupData () {
-        return Promise.all([getSystems(), getFactions(), getCurrentState()]);
-      };
+      function getMissionResults () {
+        return fetch(Prod ? EndPoints["Prod"]["Mission"] : EndPoints["Dev"]["Mission"]).then(response => response.json());
+      }
 
       function determineFactionColor (state, factions)
       {
@@ -285,27 +295,36 @@
         }
       };
 
-      var wSystems, wFactions, wState;
+      function getSetupData () {
+        return Promise.all([getSystems(), getFactions(), getCurrentState(), getMissionResults()]);
+      };
+
+      var wSystems, wFactions, wState, wMissionResults;
 
       getSetupData()
-        .then(([systems, factions, state]) => {
+        .then(([systems, factions, state, missionResults]) => {
           wSystems = systems;
           wFactions = factions;
           wState = state;
+          wMissionResults = missionResults;
+
           var contestedSystems = [];
+          var systemsWithActivity = missionResults.map(x => x.system);
           var layer;
           var contestedLayer = new Konva.Layer();
           for(var i = 0; i < systems.length; i++) {
             state[i].controlList.sort((a,b) => b.percentage - a.percentage);
             var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
-            var contested = contestingFactions.length > 1 ;
+            var contested =
+              contestingFactions.length > 1 &&
+              systemsWithActivity.includes(systems[i].name);
             var controllingFaction;
             if (!contested) {
-              contestingFactions = [state[i].controlList[0]];
+              if (contestingFactions.length == 0) { contestingFactions = [state[i].controlList[0]]; } // deal with abandoned: 0
               controllingFaction = contestingFactions[0].faction;
               factions[controllingFaction].controlCount++;
             }
-            var color = determineFactionColor( state[i], factions);
+            var color = determineFactionColor(state[i], factions);
             var drawableSystem = { x: systems[i].x, y: -systems[i].y, color: color, name: systems[i].name, factions: contestingFactions };
             if (contested) {
               layer = contestedLayer;
