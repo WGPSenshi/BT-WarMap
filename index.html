@@ -150,12 +150,13 @@
       });
 
       var factionLayers = {};
-
+      const SpecialSystems = ["Terra", "Solaris", "Galatea", "Luthien", "New Avalon", "Sian", "Atreus (FWL)", "Rasalhague", "St. Ives", "Oberon", "Taurus", "Canopus", "Alpheratz", "Circinus", "Alphard (MH)", "Lothario", "Coromodir", "Tharkad"];
       function addSystem (system, contested, layer) {
+        var special = SpecialSystems.includes(system.name);
         var hoverNode = new Konva.Circle({
           x: system.x,
           y: system.y,
-          radius: 5,
+          radius: special ? 8 : 5,
           id: system.name,
           factions: system.factions,
           fill: "black",
@@ -166,7 +167,7 @@
           var contestedNode = new Konva.Circle({
             x: system.x,
             y: system.y,
-            radius: 4,
+            radius: special ? 8 : 4,
             fill: "rgba(255,0,0, 0.45)",
             id: system.name,
             factions: system.factions
@@ -176,11 +177,11 @@
           var bloomNode = new Konva.Circle({
             x: system.x,
             y: system.y,
-            radius: system.name == "Terra" ? 4 : 3,
+            radius: special ? 6 : 3,
             fillRadialGradientStartPoint: 0,
             fillRadialGradientStartRadius: 0,
             fillRadialGradientEndPoint: 0,
-            fillRadialGradientEndRadius: 2.5,
+            fillRadialGradientEndRadius: special ? 5.5 : 2.5,
             fillRadialGradientColorStops: [1, 'rgba(0,0,0,0)', 0.5, system.color],
             id: system.name,
             factions: system.factions
@@ -190,7 +191,7 @@
         var node = new Konva.Circle({
           x: system.x,
           y: system.y,
-          radius: system.name == "Terra" ? 2 : 1,
+          radius: special ? 3 : 1,
           fill: system.color,
           id: system.name,
           factions: system.factions
