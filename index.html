@@ -34,6 +34,7 @@
       }
       #menu ul {
         font-size: 60%;
+        padding-left: 10px;
       }
       #container {
         width: 80%;
@@ -48,7 +49,9 @@
         <h2 id="factions-header">Factions</h2>
         <p>click toggles. S+click toggles all others.</p>
         <ul id="factions-list"></ul>
-        <h2 id="contested-header">Contested Systems (60min)</h2>
+        <h2 id="active-header">Active Mechwarriors</h2>
+        <ul id="active-list"></ul>
+        <h2 id="contested-header">Contested 1h</h2>
         <ul id="contested-list"></ul>
       </div>
     </div>
@@ -173,7 +176,7 @@
           var bloomNode = new Konva.Circle({
             x: system.x,
             y: system.y,
-            radius: 3,
+            radius: system.name == "Terra" ? 4 : 3,
             fillRadialGradientStartPoint: 0,
             fillRadialGradientStartRadius: 0,
             fillRadialGradientEndPoint: 0,
@@ -187,7 +190,7 @@
         var node = new Konva.Circle({
           x: system.x,
           y: system.y,
-          radius: system.name == "Terra" ? 1.5 : 1,
+          radius: system.name == "Terra" ? 2 : 1,
           fill: system.color,
           id: system.name,
           factions: system.factions
@@ -207,6 +210,8 @@
         }
       };
 
+      const ActiveLastHourEndpoint = "http://roguetech.org:8000/warServices/Users/Active/?MinutesBack=60";
+      const ActiveLastDayEndpoint = "http://roguetech.org:8000/warServices/Users/Active/?MinutesBack=1440";
       const ContestedColor = [255, 0, 0];
 
       function getSystems () {
@@ -225,6 +230,14 @@
         return fetch(Prod ? EndPoints["Prod"]["Mission"] : EndPoints["Dev"]["Mission"]).then(response => response.json());
       }
 
+      function getActiveLastHour () {
+        return fetch(ActiveLastHourEndpoint).then(response => response.json());
+      }
+
+      function getActiveLastDay () {
+        return fetch(ActiveLastDayEndpoint).then(response => response.json());
+      }
+
       function determineFactionColor (state, factions)
       {
         var factionId = state.controlList[0].faction;
@@ -237,13 +250,25 @@
         var header = document.getElementById("contested-header");
         header.appendChild(document.createTextNode(` (${contestedSystems.length})`));
         var container = document.getElementById("contested-list");
+        contestedSystems.sort((a,b) => b.active - a.active);
         for (var i = 0; i < contestedSystems.length; i++) {
           var li = document.createElement("li");
-          var text = document.createTextNode(contestedSystems[i]);
+          var text = document.createTextNode(`${contestedSystems[i].name} - ${contestedSystems[i].active} active warrior${contestedSystems[i].active != 1 ? 's' : ''}`);
           li.appendChild(text);
           container.appendChild(li);
         }
       };
+
+      function drawActiveCounts (activeCounts) {
+        var container = document.getElementById("active-list");
+        for (var i = 0; i < activeCounts.length; i++) {
+          var count = activeCounts[i];
+          var li = document.createElement("li");
+          var text = document.createTextNode(`Last ${count.timespan}: ${count.count}`);
+          li.appendChild(text);
+          container.appendChild(li);
+        }
+      }
 
       var exclusiveVisible = true;
       function drawFactionGlossary (factions) {
@@ -296,13 +321,13 @@
       };
 
       function getSetupData () {
-        return Promise.all([getSystems(), getFactions(), getCurrentState(), getMissionResults()]);
+        return Promise.all([getSystems(), getFactions(), getCurrentState(), getMissionResults(), getActiveLastHour(), getActiveLastDay()]);
       };
 
       var wSystems, wFactions, wState, wMissionResults;
 
       getSetupData()
-        .then(([systems, factions, state, missionResults]) => {
+        .then(([systems, factions, state, missionResults, activeLastHour, activeLastDay]) => {
           wSystems = systems;
           wFactions = factions;
           wState = state;
@@ -336,7 +361,7 @@
             }
             addSystem(drawableSystem, contested, layer);
             if (contested) {
-              contestedSystems.push(systems[i].name)
+              contestedSystems.push({name: systems[i].name, active: state[i].activePlayers})
             }
           }
           for (var factionId in factionLayers) {
@@ -344,6 +369,11 @@
           }
           stage.add(contestedLayer);
           drawFactionGlossary(factions);
+          drawActiveCounts(
+            [
+              {"timespan": "Day", "count": activeLastDay},
+              {"timespan": "Hour", "count": activeLastHour}
+            ]);
           drawContestedSystemNames(contestedSystems);
           stage.position({x: 600, y: 400});
           stage.add(tooltipLayer);
