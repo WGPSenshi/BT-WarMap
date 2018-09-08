@@ -27,6 +27,7 @@
         margin: 5px 20px;
       }
       #menu h2 {
+        clear: both;
         font-size: 100%;
       }
       #menu p {
@@ -35,6 +36,19 @@
       #menu ul {
         font-size: 60%;
         padding-left: 10px;
+      }
+
+      ul#useful-links {
+        padding: 0 0 10px;
+      }
+
+      #useful-links li {
+        display: inline-block;
+        float: left;
+        margin-right: 5px;
+      }
+      #useful-links a {
+        color: yellowgreen;
       }
       #container {
         width: 80%;
@@ -46,6 +60,11 @@
   <body>
     <div id="menu">
       <div id="menu-interior">
+        <ul id="useful-links">
+          <li><a href="https://www.nexusmods.com/battletech/mods/79">Nexus</a></li>
+          <li><a href="https://discord.gg/RKFXP9G">Discord Help</a></li>
+          <li><a href="http://roguetech.wikia.com/wiki/Roguetech_Wiki">Wiki</a></li>
+        </ul>
         <h2 id="factions-header">Factions</h2>
         <p>click toggles. S+click toggles all others.</p>
         <ul id="factions-list"></ul>
@@ -199,20 +218,13 @@
         layer.add(node);
       }
 
-      const Prod = true;
       const EndPoints = {
-        "Dev": {
-          "State":   "state.json",
-          "Mission": "mission.results.json"
-        },
-        "Prod": {
-          "State":   "http://roguetech.org:8000/warServices/StarMap/",
-          "Mission": "http://roguetech.org:8000/warServices/Mission/Results/?MinutesBack=60&MaxResults=300"
-        }
+        "State":   "http://roguetech.org:8001/warServices/StarMap/",
+        "Mission": "http://roguetech.org:8001/warServices/Mission/Results/?MinutesBack=60&MaxResults=300"
       };
 
-      const ActiveLastHourEndpoint = "http://roguetech.org:8000/warServices/Users/Active/?MinutesBack=60";
-      const ActiveLastDayEndpoint = "http://roguetech.org:8000/warServices/Users/Active/?MinutesBack=1440";
+      const ActiveLastHourEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=60";
+      const ActiveLastDayEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=1440";
       const ContestedColor = [255, 0, 0];
 
       function getSystems () {
@@ -220,15 +232,22 @@
       };
 
       function getFactions () {
-        return fetch("factions.json").then(response => response.json());
+        return fetch("factions.json").then(response => response.json()).then(json => normalizeFactions(json));
       };
 
+      function normalizeFactions (factionSet) {
+        for (var factionId in factionSet) {
+          factionSet[factionId].controlCount = 0;
+        }
+        return factionSet;
+      }
+
       function getCurrentState () {
-        return fetch(Prod ? EndPoints["Prod"]["State"] : EndPoints["Dev"]["State"]).then(response => response.json()).then(json => json["systems"]);
+        return fetch(EndPoints["State"]).then(response => response.json()).then(json => json["systems"]);
       }
 
       function getMissionResults () {
-        return fetch(Prod ? EndPoints["Prod"]["Mission"] : EndPoints["Dev"]["Mission"]).then(response => response.json());
+        return fetch(EndPoints["Mission"]).then(response => response.json());
       }
 
       function getActiveLastHour () {
@@ -333,25 +352,38 @@
           wFactions = factions;
           wState = state;
           wMissionResults = missionResults;
-
           var contestedSystems = [];
           var systemsWithActivity = missionResults.map(x => x.system);
           var layer;
           var contestedLayer = new Konva.Layer();
-          for(var i = 0; i < systems.length; i++) {
+          for(var i = 0; i < state.length; i++) {
+            var j = systems.findIndex(x => x.name === state[i].name);
+            if (j === -1) {
+              console.log(`couldn't find match for state ${i}:${state[i].name}`);
+            }
+
+            if (state[i] === undefined) {
+              state[i] = {
+                activePlayers: 0,
+                name: systems[j],
+                controlList: [{ faction: 9999, percentage: 100 }]
+              }
+            }
             state[i].controlList.sort((a,b) => b.percentage - a.percentage);
             var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
             var contested =
               contestingFactions.length > 1 &&
-              systemsWithActivity.includes(systems[i].name);
+              systemsWithActivity.includes(systems[j].name);
             var controllingFaction;
             if (!contested) {
               if (contestingFactions.length == 0) { contestingFactions = [state[i].controlList[0]]; } // deal with abandoned: 0
               controllingFaction = contestingFactions[0].faction;
+              if (factions[controllingFaction] == undefined)
+                console.log(`faction missing: ${controllingFaction}`);
               factions[controllingFaction].controlCount++;
             }
             var color = determineFactionColor(state[i], factions);
-            var drawableSystem = { x: systems[i].x, y: -systems[i].y, color: color, name: systems[i].name, factions: contestingFactions };
+            var drawableSystem = { x: systems[j].x, y: -systems[j].y, color: color, name: systems[j].name, factions: contestingFactions };
             if (contested) {
               layer = contestedLayer;
             } else {
@@ -362,7 +394,7 @@
             }
             addSystem(drawableSystem, contested, layer);
             if (contested) {
-              contestedSystems.push({name: systems[i].name, active: state[i].activePlayers})
+              contestedSystems.push({name: systems[j].name, active: state[i].activePlayers})
             }
           }
           for (var factionId in factionLayers) {
