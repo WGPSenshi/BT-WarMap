@@ -294,8 +294,9 @@
       function drawFactionGlossary (factions) {
         var sorted = [];
         for(var f in factions) {
-          if (f == "1") continue;  // we handle abandoned faction below
-          if (f == "17") continue; // we handle the planetary govt below
+          if (f == "1") continue;    // we handle abandoned faction below
+          if (f == "17") continue;   // we handle the planetary govt below
+          if (f == "9999") continue; // we handled the "FIX-ME" faction below
           sorted.push({id: f, c: factions[f].controlCount});
         }
         var factionToggler = function(event) {
@@ -318,6 +319,8 @@
         sorted.sort((a,b) => b.c - a.c);
         sorted.push({id: "17", c: factions["17"].controlCount}); // put planetary govt near the bottom of the list
         sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
+        if (factions["9999"].controlCount > 0)
+          sorted.push({id: "9999", c: factions["9999"].controlCount}); // conditionally add FIX-ME to very bottom if they exist
         var container = document.getElementById("factions-list");
         for (var i = 0; i < sorted.length; i++) {
           var fId = sorted[i].id;
