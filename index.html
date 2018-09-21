@@ -106,28 +106,28 @@
 
       stage.add(bgLayer);
 
-	  // "Loading" lavel
-	  var statusLayer = new Konva.Layer();
-	  // create label
-	  var stLabel = new Konva.Label({
-        x: 100,
-        y: 100,
-        draggable: true
+	    // "Loading" lavel
+	    var statusLayer = new Konva.Layer();
+	    // create label
+	    var stLabel = new Konva.Label({
+				x: 100,
+				y: 100,
+				draggable: true
       });
 
       // add text to the label
       stLabel.add(new Konva.Text({
         text: 'Connecting to Comstar...',
         fontSize: 50,
-		fontFamily: 'Calibri',
+        fontFamily: 'Calibri',
         lineHeight: 1.2,
         padding: 10,
         fill: 'gray'
       }));
-	  statusLayer.add(stLabel);
-	  statusLayer.draw();
-	  stage.add(statusLayer);
-	  
+	    statusLayer.add(stLabel);
+	    statusLayer.draw();
+	    stage.add(statusLayer);
+
       var tooltipLayer = new Konva.Layer();
 
       var tooltip = new Konva.Label({
@@ -474,8 +474,8 @@
           window.addEventListener("wheel", timedScale);
         }).catch((err) => {
           console.log(err);
-		  	upLabelText = stLabel.getText()
-	        upLabelText.setAttr('text','Connection jammed. Please, try again later.');
+          upLabelText = stLabel.getText()
+	        upLabelText.setAttr("text", "Unable to connect to server. Try again later.");
 	        statusLayer.draw();
         });
     </script>
