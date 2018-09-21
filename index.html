@@ -106,6 +106,28 @@
 
       stage.add(bgLayer);
 
+	    // "Loading" lavel
+	    var statusLayer = new Konva.Layer();
+	    // create label
+	    var stLabel = new Konva.Label({
+				x: 100,
+				y: 100,
+				draggable: true
+      });
+
+      // add text to the label
+      stLabel.add(new Konva.Text({
+        text: 'Connecting to Comstar...',
+        fontSize: 50,
+        fontFamily: 'Calibri',
+        lineHeight: 1.2,
+        padding: 10,
+        fill: 'gray'
+      }));
+	    statusLayer.add(stLabel);
+	    statusLayer.draw();
+	    stage.add(statusLayer);
+
       var tooltipLayer = new Konva.Layer();
 
       var tooltip = new Konva.Label({
@@ -153,6 +175,9 @@
           var newText = node.getId();
           window.lastnode = node;
           var controllingFactions = node.getAttrs().factions;
+		  if (!controllingFactions.length) {
+		    console.log('no controlling factions for state ${i}:${state[i].name}');
+		  }
           for (var i = 0; i < controllingFactions.length; i++) {
             var faction = controllingFactions[i];
             newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}%`;
@@ -385,7 +410,7 @@
               console.log(`faction missing: ${controllingFaction}`);
             factions[controllingFaction].controlCount++;
             var color = determineFactionColor(state[i], factions);
-            var drawableSystem = { x: systems[j].x, y: -systems[j].y, color: color, name: systems[j].name, factions: contestingFactions };
+            var drawableSystem = { x: parseInt(systems[j].x), y: parseInt(-systems[j].y), color: color, name: systems[j].name, factions: contestingFactions };
             if (contested) {
               layer = contestedLayer;
             } else {
@@ -413,6 +438,8 @@
           stage.position({x: 600, y: 400});
           stage.add(tooltipLayer);
           stage.batchDraw();
+		  statusLayer.visible(false);
+		  statusLayer.draw();
 
           var scaleBy = 1.25;
           var prevTime = new Date().getTime();
@@ -447,6 +474,9 @@
           window.addEventListener("wheel", timedScale);
         }).catch((err) => {
           console.log(err);
+          upLabelText = stLabel.getText()
+	        upLabelText.setAttr("text", "Unable to connect to server. Try again later.");
+	        statusLayer.draw();
         });
     </script>
   </body>
