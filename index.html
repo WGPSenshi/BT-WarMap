@@ -299,7 +299,7 @@
         contestedSystems.sort((a,b) => b.active - a.active);
         for (var i = 0; i < contestedSystems.length; i++) {
           var li = document.createElement("li");
-          var text = document.createTextNode(`${contestedSystems[i].name} - ${contestedSystems[i].active} active warrior${contestedSystems[i].active != 1 ? 's' : ''}`);
+          var text = document.createTextNode(`${contestedSystems[i].name} - ${contestedSystems[i].active} active commander${contestedSystems[i].active != 1 ? 's' : ''}`);
           li.appendChild(text);
           container.appendChild(li);
         }
