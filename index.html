@@ -1,484 +1,486 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Live RogueTech War Map</title>
-    <meta charset="utf-8" />
-    <script src="https://cdn.rawgit.com/konvajs/konva/2.2.2/konva.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: #000000;
-      }
-      #menu {
-        width: 20%;
-        float: left;
-        background-color: #000020;
-        color: white;
-        display: inline-block;
-        font-family: sans-serif;
-        display: inline-block;
-      }
-      #menu-interior {
-        min-height: 100%;
-        max-height: 100%;
-        height: 100%;
-        overflow: auto;
-        margin: 5px 20px;
-      }
-      #menu h2 {
-        clear: both;
-        font-size: 100%;
-      }
-      #menu p {
-        font-size: 50%;
-      }
-      #menu ul {
-        font-size: 60%;
-        padding-left: 10px;
-      }
+    <head>
+        <title>Live RogueTech War Map</title>
+        <meta charset="utf-8" />
+        <script src="https://cdn.rawgit.com/konvajs/konva/2.2.2/konva.min.js"></script>
+        <style>
+         body {
+             margin: 0;
+             padding: 0;
+             background-color: #000000;
+         }
+         #menu {
+             width: 20%;
+             float: left;
+             background-color: #000020;
+             color: white;
+             display: inline-block;
+             font-family: sans-serif;
+             display: inline-block;
+         }
+         #menu-interior {
+             min-height: 100%;
+             max-height: 100%;
+             height: 100%;
+             overflow: auto;
+             margin: 5px 20px;
+         }
+         #menu h2 {
+             clear: both;
+             font-size: 100%;
+         }
+         #menu p {
+             font-size: 50%;
+         }
+         #menu ul {
+             font-size: 60%;
+             padding-left: 10px;
+         }
 
-      ul#useful-links {
-        padding: 0 0 10px;
-      }
+         ul#useful-links {
+             padding: 0 0 10px;
+         }
 
-      #useful-links li {
-        display: inline-block;
-        float: left;
-        margin-right: 5px;
-      }
-      #useful-links a {
-        color: yellowgreen;
-      }
-      #container {
-        width: 80%;
-        float: right;
-        overflow: hidden;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="menu">
-      <div id="menu-interior">
-        <ul id="useful-links">
-          <li><a href="https://www.nexusmods.com/battletech/mods/79">Nexus</a></li>
-          <li><a href="https://discord.gg/RKFXP9G">Discord Help</a></li>
-          <li><a href="https://roguetech.gamepedia.com">Wiki</a></li>
-          <li><a href="https://www.nexusmods.com/Core/Libs/Common/Widgets/PayPalPopUp?user=6191338">Donate</a></li>
-        </ul>
-        <h2 id="factions-header">Factions</h2>
-        <p>click toggles. S+click toggles all others.</p>
-        <ul id="factions-list"></ul>
-        <h2 id="active-header">Active Commanders</h2>
-        <ul id="active-list"></ul>
-        <h2 id="contested-header">Contested 1h</h2>
-        <ul id="contested-list"></ul>
-      </div>
-    </div>
-    <div id="container"></div>
-    <script>
-     var width = window.innerWidth;
-     var height = window.innerHeight;
+         #useful-links li {
+             display: inline-block;
+             float: left;
+             margin-right: 5px;
+         }
+         #useful-links a {
+             color: yellowgreen;
+         }
+         #container {
+             width: 80%;
+             float: right;
+             overflow: hidden;
+         }
+        </style>
+    </head>
+    <body>
+        <div id="menu">
+            <div id="menu-interior">
+                <ul id="useful-links">
+                    <li><a href="https://www.nexusmods.com/battletech/mods/79">Nexus</a></li>
+                    <li><a href="https://discord.gg/RKFXP9G">Discord Help</a></li>
+                    <li><a href="https://roguetech.gamepedia.com">Wiki</a></li>
+                    <li><a href="https://www.nexusmods.com/Core/Libs/Common/Widgets/PayPalPopUp?user=6191338">Donate</a></li>
+                </ul>
+                <h2 id="factions-header">Factions</h2>
+                <p>click toggles. S+click toggles all others.</p>
+                <ul id="factions-list"></ul>
+                <h2 id="active-header">Active Commanders</h2>
+                <ul id="active-list"></ul>
+                <h2 id="contested-header">Contested 1h</h2>
+                <ul id="contested-list"></ul>
+            </div>
+        </div>
+        <div id="container"></div>
+        <script>
 
-     var stage = new Konva.Stage({
-         container: 'container',
-         width: width,
-         height: height,
-         draggable: true
-     });
 
-     var bgLayer = new Konva.Layer();
+         var width = window.innerWidth;
+         var height = window.innerHeight;
 
-     var imageObj = new Image();
-     var backgroundImage = new Konva.Image();
-     imageObj.onload = function() {
-         backgroundImage = new Konva.Image({
-             x: -14000,
-             y: -19250,
-             width: 28000,
-             height: 28000,
-             image: imageObj,
-             opacity: 0.2
+         var stage = new Konva.Stage({
+             container: 'container',
+             width: width,
+             height: height,
+             draggable: true
          });
-         bgLayer.add(backgroundImage);
-         bgLayer.draw();
-     };
-     imageObj.src = 'https://i.imgur.com/edbWS4P.jpg';
 
-     stage.add(bgLayer);
+         var bgLayer = new Konva.Layer();
 
-	   // "Loading" label
-	   var statusLayer = new Konva.Layer();
-	   // create label
-	   var stLabel = new Konva.Label({
-				 x: 100,
-				 y: 100,
-				 draggable: true
-     });
-
-     // add text to the label
-     stLabel.add(new Konva.Text({
-         text: 'Connecting to Comstar...',
-         fontSize: 50,
-         fontFamily: 'Calibri',
-         lineHeight: 1.2,
-         padding: 10,
-         fill: 'gray'
-     }));
-	   statusLayer.add(stLabel);
-	   statusLayer.draw();
-	   stage.add(statusLayer);
-
-     var tooltipLayer = new Konva.Layer();
-
-     var tooltip = new Konva.Label({
-         opacity: 0.75,
-         visible: false,
-         listening: false
-     });
-
-     tooltip.add(new Konva.Tag({
-         fill: 'white',
-         pointerDirection: 'down',
-         pointerWidth: 10,
-         pointerHeight: 10,
-         lineJoin: 'round',
-         shadowColor: 'gray',
-         shadowBlur: 10,
-         shadowOffset: 10,
-         shadowOpacity: 0.2
-     }));
-
-     tooltip.add(new Konva.Text({
-         text: '',
-         fontFamily: 'Calibri',
-         fontSize: 18,
-         padding: 5,
-         fill: 'black'
-     }));
-
-     tooltipLayer.add(tooltip);
-
-     stage.on('mouseover mousemove dragmove', function(evt) {
-         var node = evt.target;
-         if (node && node.nodeType == "Shape" && node != backgroundImage) {
-             // update tooltip
-             var scale = stage.scaleX();
-
-             var mousePointTo = {
-                 x: stage.getPointerPosition().x / scale - stage.x() / scale,
-                 y: stage.getPointerPosition().y / scale - stage.y() / scale,
-             };
-             tooltip.position({
-                 x : mousePointTo.x,
-                 y : mousePointTo.y - 5
+         var imageObj = new Image();
+         var backgroundImage = new Konva.Image();
+         imageObj.onload = function() {
+             backgroundImage = new Konva.Image({
+                 x: -14000,
+                 y: -19250,
+                 width: 28000,
+                 height: 28000,
+                 image: imageObj,
+                 opacity: 0.2
              });
-             var newText = node.getId();
-             window.lastnode = node;
-             var controllingFactions = node.getAttrs().factions;
-		         if (!controllingFactions.length) {
-		             console.log('no controlling factions for state ${i}:${state[i].name}');
-		         }
-             for (var i = 0; i < controllingFactions.length; i++) {
-                 var faction = controllingFactions[i];
-                 newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}%`;
-             }
-             tooltip.children[1].setText(newText);
-             tooltip.show();
-             tooltipLayer.batchDraw();
-         }
-     });
+             bgLayer.add(backgroundImage);
+             bgLayer.draw();
+         };
+         imageObj.src = 'https://i.imgur.com/edbWS4P.jpg';
 
-     stage.on('mouseout', function(evt) {
-         tooltip.hide();
-         tooltipLayer.draw();
-     });
+         stage.add(bgLayer);
 
-     var factionLayers = {};
-     const SpecialSystems = ["Terra", "Solaris", "Galatea", "Luthien", "New Avalon", "Sian", "Atreus (FWL)", "Rasalhague", "St. Ives", "Oberon", "Taurus", "Canopus", "Alpheratz", "Circinus", "Alphard (MH)", "Lothario", "Coromodir", "Tharkad", "Asturias", "Far Reach", "Albion (Clan)", " Zara(Homer 2850 +)", "Tamaron", "Strato Domingo", "Shadow", "Arcadia (Clan)", "Dagda (Clan)", "Kirin", "Hector", "Ironhold", "Barcella", "Strana Mechty", "Huntress", "Lum", "Sheridan (Clan)", "New Kent", "Tiber (Clan)", "New Delphi", "Blackbone (Nyserta 3025+)", "Bremen (HL)", "Trondheim (JF)", "Tortuga Prime", "Gotterdammerung", "Thala"];
-     function addSystem (system, contested, layer) {
-         var special = SpecialSystems.includes(system.name);
-         var hoverNode = new Konva.Circle({
-             x: system.x,
-             y: system.y,
-             radius: special ? 8 : 5,
-             id: system.name,
-             factions: system.factions,
-             fill: "black",
-             opacity: 0
+	       // "Loading" lavel
+	       var statusLayer = new Konva.Layer();
+	       // create label
+	       var stLabel = new Konva.Label({
+				     x: 100,
+				     y: 100,
+				     draggable: true
          });
-         layer.add(hoverNode);
-         if (contested) {
-             var contestedNode = new Konva.Circle({
-                 x: system.x,
-                 y: system.y,
-                 radius: special ? 8 : 4,
-                 fill: "rgba(255,0,0, 0.45)",
-                 id: system.name,
-                 factions: system.factions
-             });
-             layer.add(contestedNode);
-         } else {
-             var bloomNode = new Konva.Circle({
-                 x: system.x,
-                 y: system.y,
-                 radius: special ? 6 : 3,
-                 fillRadialGradientStartPoint: 0,
-                 fillRadialGradientStartRadius: 0,
-                 fillRadialGradientEndPoint: 0,
-                 fillRadialGradientEndRadius: special ? 5.5 : 2.5,
-                 fillRadialGradientColorStops: [1, 'rgba(0,0,0,0)', 0.5, system.color],
-                 id: system.name,
-                 factions: system.factions
-             });
-             layer.add(bloomNode);
-         }
-         var node = new Konva.Circle({
-             x: system.x,
-             y: system.y,
-             radius: special ? 3 : 1,
-             fill: system.color,
-             id: system.name,
-             factions: system.factions
+
+         // add text to the label
+         stLabel.add(new Konva.Text({
+             text: 'Connecting to Comstar...',
+             fontSize: 50,
+             fontFamily: 'Calibri',
+             lineHeight: 1.2,
+             padding: 10,
+             fill: 'gray'
+         }));
+	       statusLayer.add(stLabel);
+	       statusLayer.draw();
+	       stage.add(statusLayer);
+
+         var tooltipLayer = new Konva.Layer();
+
+         var tooltip = new Konva.Label({
+             opacity: 0.75,
+             visible: false,
+             listening: false
          });
-         layer.add(node);
-     }
 
-     const EndPoints = {
-         "State":   "http://roguetech.org:8001/warServices/StarMap/",
-         "Mission": "http://roguetech.org:8001/warServices/Mission/Results/?MinutesBack=60&MaxResults=300"
-     };
+         tooltip.add(new Konva.Tag({
+             fill: 'white',
+             pointerDirection: 'down',
+             pointerWidth: 10,
+             pointerHeight: 10,
+             lineJoin: 'round',
+             shadowColor: 'gray',
+             shadowBlur: 10,
+             shadowOffset: 10,
+             shadowOpacity: 0.2
+         }));
 
-     const ActiveLastHourEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=60";
-     const ActiveLastDayEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=1440";
-     const ContestedColor = [255, 0, 0];
+         tooltip.add(new Konva.Text({
+             text: '',
+             fontFamily: 'Calibri',
+             fontSize: 18,
+             padding: 5,
+             fill: 'black'
+         }));
 
-     function getSystems () {
-         return fetch("systems.json").then(response => response.json());
-     };
+         tooltipLayer.add(tooltip);
 
-     function getFactions () {
-         return fetch("factions.json").then(response => response.json()).then(json => normalizeFactions(json));
-     };
+         stage.on('mouseover mousemove dragmove', function(evt) {
+             var node = evt.target;
+             if (node && node.nodeType == "Shape" && node != backgroundImage) {
+                 // update tooltip
+                 var scale = stage.scaleX();
 
-     function normalizeFactions (factionSet) {
-         for (var factionId in factionSet) {
-             factionSet[factionId].controlCount = 0;
-         }
-         return factionSet;
-     }
-
-     function getCurrentState () {
-         return fetch(EndPoints["State"]).then(response => response.json()).then(json => json["systems"]);
-     }
-
-     function getMissionResults () {
-         return fetch(EndPoints["Mission"]).then(response => response.json());
-     }
-
-     function getActiveLastHour () {
-         return fetch(ActiveLastHourEndpoint).then(response => response.json());
-     }
-
-     function getActiveLastDay () {
-         return fetch(ActiveLastDayEndpoint).then(response => response.json());
-     }
-
-     function determineFactionColor (state, factions)
-     {
-         var factionId = state.controlList[0].faction;
-         var color = factions[factionId].color;
-         color = [color[0]*255, color[1]*255, color[2]*255];
-         return `rgb(${color[0]},${color[1]},${color[2]})`;
-     }
-
-     function drawContestedSystemNames (contestedSystems) {
-         var header = document.getElementById("contested-header");
-         header.appendChild(document.createTextNode(` (${contestedSystems.length})`));
-         var container = document.getElementById("contested-list");
-         contestedSystems.sort((a,b) => b.active - a.active);
-         for (var i = 0; i < contestedSystems.length; i++) {
-             var li = document.createElement("li");
-             var text = document.createTextNode(`${contestedSystems[i].name} - ${contestedSystems[i].active} active warrior${contestedSystems[i].active != 1 ? 's' : ''}`);
-             li.appendChild(text);
-             container.appendChild(li);
-         }
-     };
-
-     function drawActiveCounts (activeCounts) {
-         var container = document.getElementById("active-list");
-         for (var i = 0; i < activeCounts.length; i++) {
-             var count = activeCounts[i];
-             var li = document.createElement("li");
-             var text = document.createTextNode(`Last ${count.timespan}: ${count.count}`);
-             li.appendChild(text);
-             container.appendChild(li);
-         }
-     }
-
-     var exclusiveVisible = true;
-     function drawFactionGlossary (factions) {
-         var sorted = [];
-         for(var f in factions) {
-             if (f == "1") continue;    // we handle abandoned faction below
-             if (f == "17") continue;   // we handle the planetary govt below
-             if (f == "9999") continue; // we handled the "FIX-ME" faction below
-             sorted.push({id: f, c: factions[f].controlCount});
-         }
-         var factionToggler = function(event) {
-             if (event.shiftKey) {
-                 // hide everything except currently clicked faction
-                 for (layer in factionLayers) {
-                     if (this == layer) continue;
-                     if (exclusiveVisible) {
-                         factionLayers[layer].hide();
-                     } else {
-                         factionLayers[layer].show();
-                     }
+                 var mousePointTo = {
+                     x: stage.getPointerPosition().x / scale - stage.x() / scale,
+                     y: stage.getPointerPosition().y / scale - stage.y() / scale,
+                 };
+                 tooltip.position({
+                     x : mousePointTo.x,
+                     y : mousePointTo.y - 5
+                 });
+                 var newText = node.getId();
+                 window.lastnode = node;
+                 var controllingFactions = node.getAttrs().factions;
+		             if (!controllingFactions.length) {
+		                 console.log('no controlling factions for state ${i}:${state[i].name}');
+		             }
+                 for (var i = 0; i < controllingFactions.length; i++) {
+                     var faction = controllingFactions[i];
+                     newText = newText + `\n${wFactions[faction.faction].name}: ${faction.percentage}%`;
                  }
-                 exclusiveVisible = !exclusiveVisible
+                 tooltip.children[1].setText(newText);
+                 tooltip.show();
+                 tooltipLayer.batchDraw();
+             }
+         });
+
+         stage.on('mouseout', function(evt) {
+             tooltip.hide();
+             tooltipLayer.draw();
+         });
+
+         var factionLayers = {};
+         const SpecialSystems = ["Terra", "Solaris", "Galatea", "Luthien", "New Avalon", "Sian", "Atreus (FWL)", "Rasalhague", "St. Ives", "Oberon", "Taurus", "Canopus", "Alpheratz", "Circinus", "Alphard (MH)", "Lothario", "Coromodir", "Tharkad", "Asturias", "Far Reach", "Albion (Clan)", " Zara(Homer 2850 +)", "Tamaron", "Strato Domingo", "Shadow", "Arcadia (Clan)", "Dagda (Clan)", "Kirin", "Hector", "Ironhold", "Barcella", "Strana Mechty", "Huntress", "Lum", "Sheridan (Clan)", "New Kent", "Tiber (Clan)", "New Delphi", "Blackbone (Nyserta 3025+)", "Bremen (HL)", "Trondheim (JF)", "Tortuga Prime", "Gotterdammerung", "Thala"];
+         function addSystem (system, contested, layer) {
+             var special = SpecialSystems.includes(system.name);
+             var hoverNode = new Konva.Circle({
+                 x: system.x,
+                 y: system.y,
+                 radius: special ? 8 : 5,
+                 id: system.name,
+                 factions: system.factions,
+                 fill: "black",
+                 opacity: 0
+             });
+             layer.add(hoverNode);
+             if (contested) {
+                 var contestedNode = new Konva.Circle({
+                     x: system.x,
+                     y: system.y,
+                     radius: special ? 8 : 4,
+                     fill: "rgba(255,0,0, 0.45)",
+                     id: system.name,
+                     factions: system.factions
+                 });
+                 layer.add(contestedNode);
              } else {
-                 // hide just currently clicked faction
-                 factionLayers[this].isVisible() ? factionLayers[this].hide() : factionLayers[this].show();
+                 var bloomNode = new Konva.Circle({
+                     x: system.x,
+                     y: system.y,
+                     radius: special ? 6 : 3,
+                     fillRadialGradientStartPoint: 0,
+                     fillRadialGradientStartRadius: 0,
+                     fillRadialGradientEndPoint: 0,
+                     fillRadialGradientEndRadius: special ? 5.5 : 2.5,
+                     fillRadialGradientColorStops: [1, 'rgba(0,0,0,0)', 0.5, system.color],
+                     id: system.name,
+                     factions: system.factions
+                 });
+                 layer.add(bloomNode);
+             }
+             var node = new Konva.Circle({
+                 x: system.x,
+                 y: system.y,
+                 radius: special ? 3 : 1,
+                 fill: system.color,
+                 id: system.name,
+                 factions: system.factions
+             });
+             layer.add(node);
+         }
+
+         const EndPoints = {
+             "State":   "http://roguetech.org:8001/warServices/StarMap/",
+             "Mission": "http://roguetech.org:8001/warServices/Mission/Results/?MinutesBack=60&MaxResults=300"
+         };
+
+         const ActiveLastHourEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=60";
+         const ActiveLastDayEndpoint = "http://roguetech.org:8001/warServices/Users/Active/?MinutesBack=1440";
+         const ContestedColor = [255, 0, 0];
+
+         function getSystems () {
+             return fetch("systems.json").then(response => response.json());
+         };
+
+         function getFactions () {
+             return fetch("factions.json").then(response => response.json()).then(json => normalizeFactions(json));
+         };
+
+         function normalizeFactions (factionSet) {
+             for (var factionId in factionSet) {
+                 factionSet[factionId].controlCount = 0;
+             }
+             return factionSet;
+         }
+
+         function getCurrentState () {
+             return fetch(EndPoints["State"]).then(response => response.json()).then(json => json["systems"]);
+         }
+
+         function getMissionResults () {
+             return fetch(EndPoints["Mission"]).then(response => response.json());
+         }
+
+         function getActiveLastHour () {
+             return fetch(ActiveLastHourEndpoint).then(response => response.json());
+         }
+
+         function getActiveLastDay () {
+             return fetch(ActiveLastDayEndpoint).then(response => response.json());
+         }
+
+         function determineFactionColor (state, factions)
+         {
+             var factionId = state.controlList[0].faction;
+             var color = factions[factionId].color;
+             color = [color[0]*255, color[1]*255, color[2]*255];
+             return `rgb(${color[0]},${color[1]},${color[2]})`;
+         }
+
+         function drawContestedSystemNames (contestedSystems) {
+             var header = document.getElementById("contested-header");
+             header.appendChild(document.createTextNode(` (${contestedSystems.length})`));
+             var container = document.getElementById("contested-list");
+             contestedSystems.sort((a,b) => b.active - a.active);
+             for (var i = 0; i < contestedSystems.length; i++) {
+                 var li = document.createElement("li");
+                 var text = document.createTextNode(`${contestedSystems[i].name} - ${contestedSystems[i].active} active commander${contestedSystems[i].active != 1 ? 's' : ''}`);
+                 li.appendChild(text);
+                 container.appendChild(li);
              }
          };
-         sorted.sort((a,b) => b.c - a.c);
-         sorted.push({id: "17", c: factions["17"].controlCount}); // put planetary govt near the bottom of the list
-         sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
-         if (factions["9999"].controlCount > 0)
-             sorted.push({id: "9999", c: factions["9999"].controlCount}); // conditionally add FIX-ME to very bottom if they exist
-         var container = document.getElementById("factions-list");
-         for (var i = 0; i < sorted.length; i++) {
-             var fId = sorted[i].id;
-             var li = document.createElement("li");
-             var factionColor = factions[fId].color;
-             li.style.color = `rgb(${factionColor[0] * 255}, ${factionColor[1] * 255}, ${factionColor[2] * 255})`
-             var text = document.createTextNode(factions[fId].name);
-             var span = document.createElement("span");
-             span.style.color = "white";
-             var count = document.createTextNode(` (${sorted[i].c})`);
-             span.appendChild(count);
-             li.appendChild(text);
-             li.appendChild(span);
-             container.appendChild(li);
-             li.addEventListener(
-                 "click",
-                 factionToggler.bind(fId),
-                 false
-             );
+
+         function drawActiveCounts (activeCounts) {
+             var container = document.getElementById("active-list");
+             for (var i = 0; i < activeCounts.length; i++) {
+                 var count = activeCounts[i];
+                 var li = document.createElement("li");
+                 var text = document.createTextNode(`Last ${count.timespan}: ${count.count}`);
+                 li.appendChild(text);
+                 container.appendChild(li);
+             }
          }
-     };
 
-     function getSetupData () {
-         return Promise.all([getSystems(), getFactions(), getCurrentState(), getMissionResults(), getActiveLastHour(), getActiveLastDay()]);
-     };
-
-     var wSystems, wFactions, wState, wMissionResults;
-
-     getSetupData()
-         .then(([systems, factions, state, missionResults, activeLastHour, activeLastDay]) => {
-             wSystems = systems;
-             wFactions = factions;
-             wState = state;
-             wMissionResults = missionResults;
-             var contestedSystems = [];
-             var systemsWithActivity = missionResults.map(x => x.system);
-             var layer;
-             var contestedLayer = new Konva.Layer();
-             for(var i = 0; i < state.length; i++) {
-                 var j = systems.findIndex(x => x.name === state[i].name);
-                 if (j === -1) {
-                     console.log(`couldn't find match for state ${i}:${state[i].name}`);
-                 }
-
-                 if (state[i] === undefined) {
-                     state[i] = {
-                         activePlayers: 0,
-                         name: systems[j],
-                         controlList: [{ faction: 9999, percentage: 100 }]
+         var exclusiveVisible = true;
+         function drawFactionGlossary (factions) {
+             var sorted = [];
+             for(var f in factions) {
+                 if (f == "1") continue;    // we handle abandoned faction below
+                 if (f == "17") continue;   // we handle the planetary govt below
+                 if (f == "9999") continue; // we handled the "FIX-ME" faction below
+                 sorted.push({id: f, c: factions[f].controlCount});
+             }
+             var factionToggler = function(event) {
+                 if (event.shiftKey) {
+                     // hide everything except currently clicked faction
+                     for (layer in factionLayers) {
+                         if (this == layer) continue;
+                         if (exclusiveVisible) {
+                             factionLayers[layer].hide();
+                         } else {
+                             factionLayers[layer].show();
+                         }
                      }
-                 }
-                 state[i].controlList.sort((a,b) => b.percentage - a.percentage);
-                 var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
-                 var contested =
-                     contestingFactions.length > 1 &&
-                     systemsWithActivity.includes(systems[j].name);
-                 var controllingFaction;
-
-                 if (contestingFactions.length == 0) { contestingFactions = [state[i].controlList[0]]; } // deal with abandoned: 0
-                 controllingFaction = contestingFactions[0].faction;
-                 if (factions[controllingFaction] == undefined)
-                     console.log(`faction missing: ${controllingFaction}`);
-                 factions[controllingFaction].controlCount++;
-                 var color = determineFactionColor(state[i], factions);
-                 var drawableSystem = { x: parseInt(systems[j].x), y: parseInt(-systems[j].y), color: color, name: systems[j].name, factions: contestingFactions };
-                 if (contested) {
-                     layer = contestedLayer;
+                     exclusiveVisible = !exclusiveVisible
                  } else {
-                     if (!factionLayers[controllingFaction]) {
-                         factionLayers[controllingFaction] = new Konva.Layer();
+                     // hide just currently clicked faction
+                     factionLayers[this].isVisible() ? factionLayers[this].hide() : factionLayers[this].show();
+                 }
+             };
+             sorted.sort((a,b) => b.c - a.c);
+             sorted.push({id: "17", c: factions["17"].controlCount}); // put planetary govt near the bottom of the list
+             sorted.push({id: "1", c: factions["1"].controlCount}); // put abandoned at the bottom of the list
+             if (factions["9999"].controlCount > 0)
+                 sorted.push({id: "9999", c: factions["9999"].controlCount}); // conditionally add FIX-ME to very bottom if they exist
+             var container = document.getElementById("factions-list");
+             for (var i = 0; i < sorted.length; i++) {
+                 var fId = sorted[i].id;
+                 var li = document.createElement("li");
+                 var factionColor = factions[fId].color;
+                 li.style.color = `rgb(${factionColor[0] * 255}, ${factionColor[1] * 255}, ${factionColor[2] * 255})`
+                 var text = document.createTextNode(factions[fId].name);
+                 var span = document.createElement("span");
+                 span.style.color = "white";
+                 var count = document.createTextNode(` (${sorted[i].c})`);
+                 span.appendChild(count);
+                 li.appendChild(text);
+                 li.appendChild(span);
+                 container.appendChild(li);
+                 li.addEventListener(
+                     "click",
+                     factionToggler.bind(fId),
+                     false
+                 );
+             }
+         };
+
+         function getSetupData () {
+             return Promise.all([getSystems(), getFactions(), getCurrentState(), getMissionResults(), getActiveLastHour(), getActiveLastDay()]);
+         };
+
+         var wSystems, wFactions, wState, wMissionResults;
+
+         getSetupData()
+             .then(([systems, factions, state, missionResults, activeLastHour, activeLastDay]) => {
+                 wSystems = systems;
+                 wFactions = factions;
+                 wState = state;
+                 wMissionResults = missionResults;
+                 var contestedSystems = [];
+                 var systemsWithActivity = missionResults.map(x => x.system);
+                 var layer;
+                 var contestedLayer = new Konva.Layer();
+                 for(var i = 0; i < state.length; i++) {
+                     var j = systems.findIndex(x => x.name === state[i].name);
+                     if (j === -1) {
+                         console.log(`couldn't find match for state ${i}:${state[i].name}`);
                      }
-                     layer = factionLayers[controllingFaction];
-                 }
-                 addSystem(drawableSystem, contested, layer);
-                 if (contested) {
-                     contestedSystems.push({name: systems[j].name, active: state[i].activePlayers})
-                 }
-             }
-             for (var factionId in factionLayers) {
-                 stage.add(factionLayers[factionId]);
-             }
-             stage.add(contestedLayer);
-             drawFactionGlossary(factions);
-             drawActiveCounts(
-                 [
-                     {"timespan": "Day", "count": activeLastDay},
-                     {"timespan": "Hour", "count": activeLastHour}
-                 ]);
-             drawContestedSystemNames(contestedSystems);
-             stage.position({x: 600, y: 400});
-             stage.add(tooltipLayer);
-             stage.batchDraw();
-		         statusLayer.visible(false);
-		         statusLayer.draw();
 
-             var scaleBy = 1.25;
-             var prevTime = new Date().getTime();
-             var timedScale = function (e) {
-                 if (!stage.getPointerPosition()) {
-                     return;
-                 }
-                 e.preventDefault();
-                 var curTime = new Date().getTime();
-                 if(typeof prevTime !== 'undefined'){
-                     var timeDiff = curTime - prevTime;
-                     if (timeDiff > 100) {
-                         var oldScale = stage.scaleX();
-                         var mousePointTo = {
-                             x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
-                             y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
-                         };
+                     if (state[i] === undefined) {
+                         state[i] = {
+                             activePlayers: 0,
+                             name: systems[j],
+                             controlList: [{ faction: 9999, percentage: 100 }]
+                         }
+                     }
+                     state[i].controlList.sort((a,b) => b.percentage - a.percentage);
+                     var contestingFactions = state[i].controlList.filter(x => x.percentage > 0);
+                     var contested =
+                         contestingFactions.length > 1 &&
+                         systemsWithActivity.includes(systems[j].name);
+                     var controllingFaction;
 
-                         var newScale = e.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
-                         stage.scale({ x: newScale, y: newScale });
-
-                         var newPos = {
-                             x: -(mousePointTo.x - stage.getPointerPosition().x / newScale) * newScale,
-                             y: -(mousePointTo.y - stage.getPointerPosition().y / newScale) * newScale
-                         };
-                         stage.position(newPos);
-                         stage.batchDraw();
+                     if (contestingFactions.length == 0) { contestingFactions = [state[i].controlList[0]]; } // deal with abandoned: 0
+                     controllingFaction = contestingFactions[0].faction;
+                     if (factions[controllingFaction] == undefined)
+                         console.log(`faction missing: ${controllingFaction}`);
+                     factions[controllingFaction].controlCount++;
+                     var color = determineFactionColor(state[i], factions);
+                     var drawableSystem = { x: parseInt(systems[j].x), y: parseInt(-systems[j].y), color: color, name: systems[j].name, factions: contestingFactions };
+                     if (contested) {
+                         layer = contestedLayer;
+                     } else {
+                         if (!factionLayers[controllingFaction]) {
+                             factionLayers[controllingFaction] = new Konva.Layer();
+                         }
+                         layer = factionLayers[controllingFaction];
+                     }
+                     addSystem(drawableSystem, contested, layer);
+                     if (contested) {
+                         contestedSystems.push({name: systems[j].name, active: state[i].activePlayers})
                      }
                  }
-                 prevTime = curTime;
-             }
-             window.addEventListener("wheel", timedScale);
-         }).catch((err) => {
-             console.log(err);
-             upLabelText = stLabel.getText()
-	           upLabelText.setAttr("text", "Unable to connect to server. Try again later.");
-	           statusLayer.draw();
-         });
-    </script>
-  </body>
+                 for (var factionId in factionLayers) {
+                     stage.add(factionLayers[factionId]);
+                 }
+                 stage.add(contestedLayer);
+                 drawFactionGlossary(factions);
+                 drawActiveCounts(
+                     [
+                         {"timespan": "Day", "count": activeLastDay},
+                         {"timespan": "Hour", "count": activeLastHour}
+                     ]);
+                 drawContestedSystemNames(contestedSystems);
+                 stage.position({x: 600, y: 400});
+                 stage.add(tooltipLayer);
+                 stage.batchDraw();
+		             statusLayer.visible(false);
+		             statusLayer.draw();
+
+                 var scaleBy = 1.25;
+                 var prevTime = new Date().getTime();
+                 var timedScale = function (e) {
+                     if (!stage.getPointerPosition()) {
+                         return;
+                     }
+                     e.preventDefault();
+                     var curTime = new Date().getTime();
+                     if(typeof prevTime !== 'undefined'){
+                         var timeDiff = curTime - prevTime;
+                         if (timeDiff > 100) {
+                             var oldScale = stage.scaleX();
+                             var mousePointTo = {
+                                 x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+                                 y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+                             };
+
+                             var newScale = e.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+                             stage.scale({ x: newScale, y: newScale });
+
+                             var newPos = {
+                                 x: -(mousePointTo.x - stage.getPointerPosition().x / newScale) * newScale,
+                                 y: -(mousePointTo.y - stage.getPointerPosition().y / newScale) * newScale
+                             };
+                             stage.position(newPos);
+                             stage.batchDraw();
+                         }
+                     }
+                     prevTime = curTime;
+                 }
+                 window.addEventListener("wheel", timedScale);
+             }).catch((err) => {
+                 console.log(err);
+                 upLabelText = stLabel.getText()
+	               upLabelText.setAttr("text", "Unable to connect to server. Try again later.");
+	               statusLayer.draw();
+             });
+        </script>
+    </body>
 </html>
