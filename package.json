@@ -1,0 +1,44 @@
+{
+  "name": "roguetechmap",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@types/leaflet": "^1.4.0",
+    "@types/oboe": "^2.0.28",
+    "oboe": "^2.1.4",
+    "quasar-extras": "^2.0.4",
+    "quasar-framework": "^0.17.0",
+    "register-service-worker": "^1.5.2",
+    "stream-json": "^1.1.4",
+    "vue": "^2.5.22",
+    "vue-class-component": "^6.0.0",
+    "vue-property-decorator": "^7.0.0",
+    "vue-router": "^3.0.1",
+    "vue2-leaflet": "^1.2.3",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.21",
+    "@vue/cli-plugin-babel": "^3.4.0",
+    "@vue/cli-plugin-eslint": "^3.4.0",
+    "@vue/cli-plugin-pwa": "^3.4.0",
+    "@vue/cli-plugin-typescript": "^3.4.0",
+    "@vue/cli-service": "^3.4.0",
+    "@vue/eslint-config-prettier": "^4.0.1",
+    "@vue/eslint-config-typescript": "^4.0.0",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-transform-imports": "1.5.0",
+    "eslint": "^5.8.0",
+    "eslint-plugin-vue": "^5.0.0",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.2",
+    "typescript": "~3.2.2",
+    "vue-cli-plugin-quasar": "^0.17.1",
+    "vue-template-compiler": "^2.5.21"
+  }
+}
