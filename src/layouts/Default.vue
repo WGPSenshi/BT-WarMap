@@ -50,6 +50,10 @@
             <q-item-side icon="attach_money"/>
             <q-item-main label="Donate"></q-item-main>
           </q-item>
+          <q-item @click.native="openURL('https://github.com/WGPSenshi/BT-WarMap')">
+            <q-item-side icon="code"/>
+            <q-item-main label="Github"></q-item-main>
+          </q-item>
         </q-list>
       </q-list>
     </q-layout-drawer>
@@ -68,7 +72,7 @@ export default {
   data() {
     return {
       leftDrawerOpen: this.$q.platform.is.desktop,
-      version: "2019-02-09 Build 1"
+      version: "2019-02-12 Build 1"
     };
   },
   methods: {

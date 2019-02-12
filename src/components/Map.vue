@@ -2,21 +2,21 @@
   <div style="height:100%; width:100%">
     <!-- <div style="height:2%">
       <p> Center is at {{ mouseCoords }} </p>
-    </div>-->
+    </div> -->
     <q-resize-observable @resize="onResize"/><l-map
     :center="center"
     :zoom="zoom"
     :minZoom="minZoom"
     :maxZoom="maxZoom"
     :maxBounds="bounds"
-    :crs="crs"
+    :crs="crsRT"
     :options="mapOptions"
     style="height: 100%"
     ref="roguetech"
     preferCanvas: true
     >
     <!-- <l-tile-layer :url="url" :attribution="attribution" :bounds="bounds" noWrap="True"/> -->
-    <l-image-overlay :url="`${publicPath}galaxy.png`" :bounds="bounds" :attribution="attribution"></l-image-overlay>
+    <!-- <l-image-overlay :url="`${publicPath}galaxy.png`" :bounds="bounds" :attribution="attribution"></l-image-overlay> -->
     <l-geo-json :geojson="geojson" :options="options" :options-style="styleFunction"></l-geo-json>
     <l-feature-group name="systemmarkers" ref="systemmarkers"></l-feature-group>
     </l-map>
@@ -52,14 +52,14 @@ export default {
   },
   data() {
     return {
-      zoom: -1,
-      minZoom: -5,
-      maxZoom: 3,
+      zoom: 5,
+      minZoom: 3,
+      maxZoom: 12,
       center: L.latLng(4000, 9000),
+      // center: L.latLng(0, 0),
       attribution:
         '&copy; <a href="https://forums.frontier.co.uk/showthread.php/220230-Images-of-the-entire-ED-galaxy">Corbin Moran </a>',
       currentZoom: 11.5,
-      currentCenter: L.latLng(47.41322, -1.219482),
       showParagraph: false,
       mapOptions: {
         zoomSnap: 0.5
@@ -83,7 +83,19 @@ export default {
       systemMarkerRadius: 3,
       canvasRenderer: L.canvas({ padding: 0.5 }),
       mouseCoords: [0, 0],
-      url: "/bg/{z}/{x}/{y}.png"
+      url: "/bg/{z}/{x}/{y}.png",
+      crsRT : L.extend({}, L.CRS.Simple, {
+        projection: L.Projection.LonLat,
+        // transformation: new L.Transformation(256/18000, 4000/18000, -256/18000, 9000/18000),
+        transformation: new L.Transformation(140.5/18000, 0, -140.5/18000, 0),
+        // Changing the transformation is the key part, everything else is the same.
+        // By specifying a factor, you specify what distance in meters one pixel occupies (as it still is CRS.Simple in all other regards).
+        // In this case, I have a tile layer with 256px pieces, so Leaflet thinks it's only 256 meters wide.
+        // I know the map is supposed to be 2048x2048 meters, so I specify a factor of 0.125 to multiply in both directions.
+        // In the actual project, I compute all that from the gdal2tiles tilemapresources.xml, 
+        // which gives the necessary information about tilesizes, total bounds and units-per-pixel at different levels.
+        infinite: true
+      })
     };
   },
   methods: {
@@ -101,17 +113,15 @@ export default {
     },
     onResize(size) {
       if (this.$refs.roguetech != "undefined") {
-        console.log("RESIZE");
-        // this.$refs.roguetech.mapObject.invalidateSize();
+        this.$refs.roguetech.mapObject.invalidateSize();
       }
     },
     onMouseMove(e) {
-      this.mouseCoords = [e.latlng.lat, e.latlng.lng];
+      this.mouseCoords = [e.latlng.lat, e.latlng.lng, e.layerPoint.x, e.layerPoint.y, e.containerPoint.x, e.containerPoint.y];
     }
   },
   mounted() {
     this.$nextTick(() => {
-      console.log("mounted");
     });
   },
   updated: function() {
@@ -159,23 +169,33 @@ export default {
     this.loading = true;
     let systemsSrc = this.systems;
     let factionsSrc = this.factions;
+    L.TileLayer.RT = L.TileLayer.extend({
+        getTileUrl: function(coords) {
+            // increment our x/y coords by 1 so they match our tile naming scheme
+            coords.x = coords.x;
+            coords.y = coords.y * -1 - 1;
+
+            // pass the new coords on through the original getTileUrl
+            // see http://leafletjs.com/examples/extending/extending-1-classes.html 
+            // for calling parent methods
+            return L.TileLayer.prototype.getTileUrl.call(this, coords);
+        }
+    });
+
+    // static factory as recommended by http://leafletjs.com/reference-1.0.3.html#class
+    L.tileLayer.RT = function(templateUrl, options) {
+        return new L.TileLayer.RT(templateUrl, options);
+    }
 
     this.$nextTick(function() {
-      var southWest = this.$refs.roguetech.mapObject.unproject([0, 18000], 0);
-      var northEast = this.$refs.roguetech.mapObject.unproject([18000, 0], 0);
-      northEast.lat = Math.abs(northEast.lat);
-      console.log(southWest);
-      console.log(northEast);
-      var bounds = new L.LatLngBounds(southWest, northEast);
-      console.log(bounds);
 
       // add the image overlay,
       // so that it covers the entire map
-      L.tileLayer(this.url, {
-        bounds: bounds,
-        minZoom: 0,
-        maxZoom: 7,
-        tms: true
+      L.tileLayer.RT(this.url, {
+        bounds: this.bounds,
+        minNativeZoom: 0,
+        maxNativeZoom: 7,
+        tms: false 
       }).addTo(this.$refs.roguetech.mapObject);
 
       this.$refs.roguetech.mapObject.on("mousemove", this.onMouseMove);
@@ -286,7 +306,7 @@ export default {
             })
             .fail(reason => console.log(reason))
             .done(reason => {
-              console.log(counter + " systems added");
+              console.log(counter + " systems loaded");
             });
         })
         .catch(err => {
