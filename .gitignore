@@ -21,3 +21,5 @@ yarn-error.log*
 *.sw*
 
 public/bg
+galaxy.png
+galaxy_labeled.png

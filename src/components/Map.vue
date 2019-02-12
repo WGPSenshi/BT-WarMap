@@ -195,7 +195,8 @@ export default {
         bounds: this.bounds,
         minNativeZoom: 0,
         maxNativeZoom: 7,
-        tms: false 
+        tms: false,
+        attribution: this.attribution
       }).addTo(this.$refs.roguetech.mapObject);
 
       this.$refs.roguetech.mapObject.on("mousemove", this.onMouseMove);
